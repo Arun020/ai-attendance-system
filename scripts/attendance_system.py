@@ -3,7 +3,6 @@ import face_recognition
 import os
 import time
 import sys
-import requests
 from datetime import datetime
 
 # -----------------------------
@@ -13,12 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
 from utils.face_utils import load_trained_model, recognize_face
-
-# -----------------------------
-# CLOUD API BASE URL
-# -----------------------------
-API_BASE_URL = "https://ai-attendance-system-edyg.onrender.com"
-
+from utils.api_client import post   # 🔥 NEW CENTRAL CLIENT
 
 # -----------------------------
 # INPUT ARGS
@@ -57,7 +51,6 @@ video_capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 SESSION_MARKED = set()
 last_seen = {}
 COOLDOWN = 10
-
 
 # -----------------------------
 # MAIN LOOP
@@ -112,11 +105,10 @@ while True:
                         "status": "Present"
                     }
 
-                    response = requests.post(
-                        f"{API_BASE_URL}/college-attendance",
-                        json=payload,
-                        timeout=10,
-                        verify=False   # 🔥 FIX ADDED
+                    response = post(
+                        "/college-attendance",
+                        payload,
+                        token
                     )
 
                 else:
@@ -129,11 +121,10 @@ while True:
                         "status": "Present"
                     }
 
-                    response = requests.post(
-                        f"{API_BASE_URL}/corporate-attendance",
-                        json=payload,
-                        timeout=10,
-                        verify=False   # 🔥 FIX ADDED
+                    response = post(
+                        "/corporate-attendance",
+                        payload,
+                        token
                     )
 
                 try:
@@ -151,7 +142,6 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
 
 video_capture.release()
 cv2.destroyAllWindows()
