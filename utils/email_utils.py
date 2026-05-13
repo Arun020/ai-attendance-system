@@ -7,9 +7,9 @@ from backend.auth_jwt import get_current_user
 
 router = APIRouter()
 
-# =========================================================
+# -----------------------------
 # DATABASE
-# =========================================================
+# -----------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 
@@ -17,9 +17,9 @@ def get_conn():
     return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 
-# =========================================================
+# -----------------------------
 # COLLEGE ATTENDANCE
-# =========================================================
+# -----------------------------
 @router.post("/college-attendance")
 def college_attendance(payload: dict, user=Depends(get_current_user)):
 
@@ -46,9 +46,9 @@ def college_attendance(payload: dict, user=Depends(get_current_user)):
     return {"message": "success"}
 
 
-# =========================================================
+# -----------------------------
 # CORPORATE ATTENDANCE
-# =========================================================
+# -----------------------------
 @router.post("/corporate-attendance")
 def corporate_attendance(payload: dict, user=Depends(get_current_user)):
 
@@ -74,9 +74,9 @@ def corporate_attendance(payload: dict, user=Depends(get_current_user)):
     return {"message": "success"}
 
 
-# =========================================================
-# 🎓 COLLEGE DEFAULTER DASHBOARD (EMAILJS)
-# =========================================================
+# -----------------------------
+# COLLEGE DEFAULTER DASHBOARD
+# -----------------------------
 @router.get("/college-defaulters", response_class=HTMLResponse)
 def college_defaulters():
 
@@ -88,8 +88,7 @@ def college_defaulters():
                 student_name,
                 COUNT(*) as total,
                 SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) as present,
-                (SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as percentage,
-                email
+                (SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as percentage
             FROM college_attendance
             WHERE strftime('%Y-%m', attendance_date)=strftime('%Y-%m','now')
             GROUP BY student_name
@@ -110,37 +109,7 @@ def college_defaulters():
             h2{text-align:center;}
             .btn{background:red;color:white;padding:6px;border:none;cursor:pointer;}
         </style>
-
-        <!-- EmailJS -->
-        <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
-        <script>
-            emailjs.init("24u84vEHfewOEqff8");
-
-            function sendEmail(name, email){
-
-                if(!email){
-                    alert("Email missing for " + name);
-                    return;
-                }
-
-                emailjs.send("service_yn9h6bq", "template_z3crfj1", {
-                    to_name: name,
-                    to_email: email,
-                    message: "You are marked as a DEFAULTER. Improve attendance immediately."
-                })
-                .then(function(response){
-                    alert("Email Sent Successfully");
-                    console.log(response);
-                })
-                .catch(function(error){
-                    alert("Email Failed");
-                    console.log(error);
-                });
-            }
-        </script>
-
     </head>
-
     <body>
     <h2>🎓 College Defaulter Dashboard</h2>
 
@@ -150,26 +119,18 @@ def college_defaulters():
             <th>Total</th>
             <th>Present</th>
             <th>%</th>
-            <th>Action</th>
         </tr>
     """
 
     for r in rows:
-        name = r[0]
-        email = r[4] if len(r) > 4 and r[4] else f"{name}@gmail.com"
+        percentage = r[3] if r[3] else 0
 
         html += f"""
         <tr>
-            <td>{name}</td>
+            <td>{r[0]}</td>
             <td>{r[1]}</td>
             <td>{r[2]}</td>
-            <td>{r[3]:.2f}</td>
-            <td>
-                <button class='btn'
-                onclick="sendEmail('{name}','{email}')">
-                    Send Email
-                </button>
-            </td>
+            <td>{percentage:.2f}</td>
         </tr>
         """
 
@@ -177,9 +138,9 @@ def college_defaulters():
     return html
 
 
-# =========================================================
-# 🏢 CORPORATE DEFAULTER DASHBOARD (EMAILJS)
-# =========================================================
+# -----------------------------
+# CORPORATE DEFAULTER DASHBOARD
+# -----------------------------
 @router.get("/corporate-defaulters", response_class=HTMLResponse)
 def corporate_defaulters():
 
@@ -191,8 +152,7 @@ def corporate_defaulters():
                 employee_name,
                 COUNT(*) as total,
                 SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) as present,
-                (SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as percentage,
-                email
+                (SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as percentage
             FROM corporate_attendance
             WHERE strftime('%Y-%m', attendance_date)=strftime('%Y-%m','now')
             GROUP BY employee_name
@@ -213,36 +173,7 @@ def corporate_defaulters():
             h2{text-align:center;}
             .btn{background:#c0392b;color:white;padding:6px;border:none;cursor:pointer;}
         </style>
-
-        <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
-        <script>
-            emailjs.init("24u84vEHfewOEqff8");
-
-            function sendEmail(name, email){
-
-                if(!email){
-                    alert("Email missing for " + name);
-                    return;
-                }
-
-                emailjs.send("service_yn9h6bq", "YOUR_TEMPLATE_ID", {
-                    to_name: name,
-                    to_email: email,
-                    message: "You are marked as a DEFAULTER. Improve attendance immediately."
-                })
-                .then(function(response){
-                    alert("Email Sent Successfully");
-                    console.log(response);
-                })
-                .catch(function(error){
-                    alert("Email Failed");
-                    console.log(error);
-                });
-            }
-        </script>
-
     </head>
-
     <body>
     <h2>🏢 Corporate Defaulter Dashboard</h2>
 
@@ -252,26 +183,18 @@ def corporate_defaulters():
             <th>Total</th>
             <th>Present</th>
             <th>%</th>
-            <th>Action</th>
         </tr>
     """
 
     for r in rows:
-        name = r[0]
-        email = r[4] if len(r) > 4 and r[4] else f"{name}@company.com"
+        percentage = r[3] if r[3] else 0
 
         html += f"""
         <tr>
-            <td>{name}</td>
+            <td>{r[0]}</td>
             <td>{r[1]}</td>
             <td>{r[2]}</td>
-            <td>{r[3]:.2f}</td>
-            <td>
-                <button class='btn'
-                onclick="sendEmail('{name}','{email}')">
-                    Send Email
-                </button>
-            </td>
+            <td>{percentage:.2f}</td>
         </tr>
         """
 

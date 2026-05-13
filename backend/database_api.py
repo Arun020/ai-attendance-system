@@ -22,13 +22,13 @@ def connect_db():
 
 
 # -----------------------------
-# INIT DB (FORCED SAFE)
+# INIT DB (SAFE + COMPLETE)
 # -----------------------------
 def init_db():
     conn = connect_db()
     cursor = conn.cursor()
 
-    # USERS TABLE (FIX YOUR ERROR)
+    # USERS TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +39,16 @@ def init_db():
         )
     """)
 
+    # STUDENTS TABLE (🔥 FIX ADDED)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+
+    # ATTENDANCE TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +58,7 @@ def init_db():
         )
     """)
 
+    # ACADEMIC ATTENDANCE TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS academic_attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,14 +70,35 @@ def init_db():
         )
     """)
 
+    # COLLEGE ATTENDANCE (used in dashboard)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS college_attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT,
+            student_name TEXT,
+            subject_name TEXT,
+            teacher_name TEXT,
+            session_id TEXT,
+            attendance_date TEXT,
+            status TEXT
+        )
+    """)
+
+    # CORPORATE ATTENDANCE
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS corporate_attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id TEXT,
+            employee_name TEXT,
+            session_id TEXT,
+            check_in_time TEXT,
+            attendance_date TEXT,
+            status TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
-
-
-# -----------------------------
-# 🔥 CRITICAL FIX (AUTO RUN)
-# -----------------------------
-init_db()
 
 
 # -----------------------------
@@ -90,3 +122,10 @@ def safe_execute(query, params=(), retries=5):
             raise e
 
     return False
+
+
+# -----------------------------
+# INIT ON IMPORT (SAFE)
+# -----------------------------
+if __name__ != "__main__":
+    init_db()

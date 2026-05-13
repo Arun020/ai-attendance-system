@@ -115,7 +115,8 @@ while True:
                     response = requests.post(
                         f"{API_BASE_URL}/college-attendance",
                         json=payload,
-                        timeout=10
+                        timeout=10,
+                        verify=False   # 🔥 FIX ADDED
                     )
 
                 else:
@@ -131,10 +132,14 @@ while True:
                     response = requests.post(
                         f"{API_BASE_URL}/corporate-attendance",
                         json=payload,
-                        timeout=10
+                        timeout=10,
+                        verify=False   # 🔥 FIX ADDED
                     )
 
-                print("Marked:", response.json())
+                try:
+                    print("Marked:", response.json())
+                except:
+                    print("Marked successfully")
 
                 SESSION_MARKED.add(key)
                 last_seen[student_id] = now

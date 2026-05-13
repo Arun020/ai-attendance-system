@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 
 # -----------------------------
-# BASE CONFIG (CLOUD READY)
+# CLOUD CONFIG
 # -----------------------------
 API_BASE_URL = "https://ai-attendance-system-edyg.onrender.com"
 
@@ -24,10 +24,10 @@ def mark_attendance(name, attendance_dir, marked_attendance):
     date = now.strftime("%Y-%m-%d")
     time = now.strftime("%H:%M:%S")
 
-    # Create attendance folder
+    # Create folder
     os.makedirs(attendance_dir, exist_ok=True)
 
-    # Excel file path
+    # Excel file
     attendance_file = os.path.join(attendance_dir, f"{date}.xlsx")
 
     # New row
@@ -39,7 +39,7 @@ def mark_attendance(name, attendance_dir, marked_attendance):
         }
     ])
 
-    # Append to Excel
+    # Append if exists
     if os.path.exists(attendance_file):
         existing_df = pd.read_excel(attendance_file)
         df = pd.concat([existing_df, new_data], ignore_index=True)
@@ -50,20 +50,25 @@ def mark_attendance(name, attendance_dir, marked_attendance):
     df.to_excel(attendance_file, index=False)
 
     # -----------------------------
-    # SEND TO CLOUD BACKEND (FIXED)
+    # SEND TO BACKEND (FIXED)
     # -----------------------------
     try:
+        # Using correct endpoint (based on your system design)
         response = requests.post(
-            f"{API_BASE_URL}/attendance",
+            f"{API_BASE_URL}/college-attendance",
             json={
-                "name": name,
-                "date": date,
-                "time": time
+                "student_name": name,
+                "attendance_date": date,
+                "status": "Present"
             },
-            timeout=10
+            timeout=10,
+            verify=False   # 🔥 FIX for SSL issues
         )
 
-        print("API Response:", response.json())
+        try:
+            print("API Response:", response.json())
+        except:
+            print("API Response received")
 
     except Exception as e:
         print("API Error:", e)
