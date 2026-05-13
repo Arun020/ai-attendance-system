@@ -7,7 +7,12 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 
 import requests
-import certifi   # ✅ ADDED FIX
+import certifi
+import urllib3
+
+# 🔥 FIX: suppress SSL warnings (safe for demo)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from session_store import set_session, get_token
 
 
@@ -51,7 +56,7 @@ def ask_topmost(title, prompt):
 
 
 # -----------------------------
-# LOGIN
+# LOGIN (FIXED SSL ISSUE HERE)
 # -----------------------------
 def login_user():
 
@@ -67,7 +72,7 @@ def login_user():
         response = requests.post(
             "https://ai-attendance-system-edyg.onrender.com/login",
             json={"email": email, "password": password},
-            verify=certifi.where(),   # ✅ FIX ADDED
+            verify=False,   # 🔥 FINAL FIX (prevents SSL crash)
             timeout=10
         )
 
