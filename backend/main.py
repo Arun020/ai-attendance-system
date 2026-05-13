@@ -9,25 +9,21 @@ from backend.teacher_api import router as teacher_router
 from backend.attendance_api import router as attendance_router
 from backend.database_api import init_db
 
-# -----------------------------
-# APP INIT
-# -----------------------------
 app = FastAPI(
     title="AI Attendance API",
     version="1.0.0"
 )
 
+security = HTTPBearer()
+
+
 # -----------------------------
-# STARTUP EVENT (IMPORTANT FIX)
+# INIT DB ON STARTUP
 # -----------------------------
 @app.on_event("startup")
 def startup():
     init_db()
 
-# -----------------------------
-# JWT SCHEME
-# -----------------------------
-security = HTTPBearer()
 
 # -----------------------------
 # CORS CONFIG
@@ -40,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # -----------------------------
 # ROUTERS
 # -----------------------------
@@ -48,21 +45,22 @@ app.include_router(admin_router)
 app.include_router(teacher_router)
 app.include_router(attendance_router)
 
+
 # -----------------------------
-# OPENAPI FIX
+# OPENAPI CONFIG
 # -----------------------------
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
 
-    openapi_schema = get_openapi(
+    schema = get_openapi(
         title="AI Attendance API",
         version="1.0.0",
         description="AI Attendance System with JWT Authentication",
         routes=app.routes,
     )
 
-    openapi_schema["components"]["securitySchemes"] = {
+    schema["components"]["securitySchemes"] = {
         "BearerAuth": {
             "type": "http",
             "scheme": "bearer",
@@ -70,15 +68,16 @@ def custom_openapi():
         }
     }
 
-    for path in openapi_schema["paths"].values():
+    for path in schema["paths"].values():
         for method in path.values():
             method.setdefault("security", [{"BearerAuth": []}])
 
-    app.openapi_schema = openapi_schema
+    app.openapi_schema = schema
     return app.openapi_schema
 
 
 app.openapi = custom_openapi
+
 
 # -----------------------------
 # ROOT
