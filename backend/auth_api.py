@@ -1,111 +1,98 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
 import sqlite3
 import os
-import time
 
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
+from utils.security_utils import hash_password, verify_password
+from backend.auth_jwt import create_token
 
+router = APIRouter()
+
+# DB PATH
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 
 
-def connect_db():
-    conn = sqlite3.connect(
-        DB_PATH,
-        timeout=10,
-        check_same_thread=False
-    )
-    conn.execute("PRAGMA journal_mode=WAL;")
-    return conn
+# -----------------------------
+# REQUEST MODELS
+# -----------------------------
+class RegisterRequest(BaseModel):
+    full_name: str
+    email: str
+    password: str
+    role: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 
 # -----------------------------
-# INIT DB (CRITICAL FIX)
+# REGISTER
 # -----------------------------
-def init_db():
-    conn = connect_db()
+@router.post("/register")
+def register_user(data: RegisterRequest):
+
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # USERS TABLE (FIX FOR /register CRASH)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL
-        )
-    """)
+    cursor.execute("SELECT * FROM users WHERE email = ?", (data.email,))
+    if cursor.fetchone():
+        conn.close()
+        return {"message": "Email already exists"}
 
-    # ATTENDANCE TABLE
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            date TEXT,
-            time TEXT
-        )
-    """)
+    hashed_password = hash_password(data.password)
 
-    # OPTIONAL TABLE (safe for your system)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS academic_attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id INTEGER,
-            subject_id INTEGER,
-            period_id INTEGER,
-            attendance_date TEXT,
-            status TEXT
-        )
-    """)
+        INSERT INTO users (full_name, email, password, role)
+        VALUES (?, ?, ?, ?)
+    """, (
+        data.full_name,
+        data.email,
+        hashed_password,
+        data.role
+    ))
 
     conn.commit()
     conn.close()
 
-
-# -----------------------------
-# SAFE EXECUTION
-# -----------------------------
-def safe_execute(query, params=(), retries=5):
-    for _ in range(retries):
-        try:
-            conn = connect_db()
-            cursor = conn.cursor()
-
-            cursor.execute(query, params)
-            conn.commit()
-            conn.close()
-            return True
-
-        except sqlite3.OperationalError as e:
-            if "locked" in str(e).lower():
-                time.sleep(0.3)
-                continue
-            raise e
-
-    return False
+    return {"message": "User registered successfully"}
 
 
 # -----------------------------
-# ATTENDANCE FUNCTIONS
+# LOGIN
 # -----------------------------
-def get_all_attendance():
-    conn = connect_db()
+@router.post("/login")
+def login_user(data: LoginRequest):
+
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM attendance ORDER BY id DESC")
-    rows = cursor.fetchall()
+    cursor.execute("""
+        SELECT id, full_name, email, password, role
+        FROM users
+        WHERE email = ?
+    """, (data.email,))
 
+    user = cursor.fetchone()
     conn.close()
 
-    return [
-        {"id": r[0], "name": r[1], "date": r[2], "time": r[3]}
-        for r in rows
-    ]
+    if not user:
+        return {"message": "Invalid user"}
 
+    user_id, full_name, email, hashed_password, role = user
 
-def insert_attendance(name, date, time):
-    safe_execute(
-        "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
-        (name, date, time)
-    )
+    if not verify_password(data.password, hashed_password):
+        return {"message": "Invalid password"}
+
+    token = create_token({
+        "sub": email,
+        "role": role
+    })
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": role
+    }

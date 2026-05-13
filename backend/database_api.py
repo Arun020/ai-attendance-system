@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(
 
 DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 
-# Ensure folder exists (Render fix)
+# Ensure folder exists
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 
@@ -29,13 +29,12 @@ def connect_db():
 
 
 # -----------------------------
-# INIT DATABASE (CRITICAL FIX)
+# INIT DATABASE (SAFE)
 # -----------------------------
 def init_db():
     conn = connect_db()
     cursor = conn.cursor()
 
-    # USERS TABLE (FIX FOR YOUR ERROR)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,12 +67,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-
-# -----------------------------
-# AUTO-RUN ON IMPORT (IMPORTANT FIX)
-# -----------------------------
-init_db()
 
 
 # -----------------------------
@@ -172,4 +165,4 @@ def mark_academic_attendance(
         period_id,
         attendance_date,
         status
-    ))  
+    ))

@@ -21,7 +21,7 @@ app = FastAPI(
 
 
 # -----------------------------
-# INIT DB ON STARTUP (RENDER SAFE)
+# STARTUP EVENT (SAFE DB INIT)
 # -----------------------------
 @app.on_event("startup")
 def startup():
@@ -35,11 +35,11 @@ security = HTTPBearer()
 
 
 # -----------------------------
-# CORS
+# CORS CONFIG
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # change to frontend URL later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,7 +56,7 @@ app.include_router(attendance_router)
 
 
 # -----------------------------
-# OPENAPI FIX
+# OPENAPI SECURITY FIX
 # -----------------------------
 def custom_openapi():
     if app.openapi_schema:
@@ -89,7 +89,7 @@ app.openapi = custom_openapi
 
 
 # -----------------------------
-# ROOT
+# HEALTH CHECK ROUTE
 # -----------------------------
 @app.get("/")
 def home():
