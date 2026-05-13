@@ -3,38 +3,32 @@ import os
 import time
 
 # -----------------------------
-# BASE PATH
+# PATH FIX (RENDER SAFE)
 # -----------------------------
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_DIR = os.path.join(BASE_DIR, "database")
+DB_PATH = os.path.join(DB_DIR, "attendance.db")
 
-DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
-
-# Ensure folder exists
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+os.makedirs(DB_DIR, exist_ok=True)
 
 
 # -----------------------------
 # CONNECTION
 # -----------------------------
 def connect_db():
-    conn = sqlite3.connect(
-        DB_PATH,
-        timeout=10,
-        check_same_thread=False
-    )
+    conn = sqlite3.connect(DB_PATH, timeout=10, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
     return conn
 
 
 # -----------------------------
-# INIT DATABASE (SAFE)
+# INIT DB (FORCED SAFE)
 # -----------------------------
 def init_db():
     conn = connect_db()
     cursor = conn.cursor()
 
+    # USERS TABLE (FIX YOUR ERROR)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +64,12 @@ def init_db():
 
 
 # -----------------------------
+# 🔥 CRITICAL FIX (AUTO RUN)
+# -----------------------------
+init_db()
+
+
+# -----------------------------
 # SAFE EXECUTE
 # -----------------------------
 def safe_execute(query, params=(), retries=5):
@@ -90,79 +90,3 @@ def safe_execute(query, params=(), retries=5):
             raise e
 
     return False
-
-
-# -----------------------------
-# GET ATTENDANCE
-# -----------------------------
-def get_all_attendance():
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM attendance ORDER BY id DESC")
-    rows = cursor.fetchall()
-
-    conn.close()
-
-    return [
-        {"id": r[0], "name": r[1], "date": r[2], "time": r[3]}
-        for r in rows
-    ]
-
-
-# -----------------------------
-# INSERT ATTENDANCE
-# -----------------------------
-def insert_attendance(name, date, time):
-    safe_execute(
-        "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
-        (name, date, time)
-    )
-
-
-# -----------------------------
-# GET STUDENT ID
-# -----------------------------
-def get_student_id_by_name(full_name):
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT students.id
-        FROM students
-        INNER JOIN users ON students.user_id = users.id
-        WHERE users.full_name = ?
-    """, (full_name,))
-
-    result = cursor.fetchone()
-    conn.close()
-
-    return result[0] if result else None
-
-
-# -----------------------------
-# MARK ATTENDANCE
-# -----------------------------
-def mark_academic_attendance(
-    student_id,
-    subject_id,
-    period_id,
-    attendance_date,
-    status
-):
-    safe_execute("""
-        INSERT INTO academic_attendance (
-            student_id,
-            subject_id,
-            period_id,
-            attendance_date,
-            status
-        )
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        student_id,
-        subject_id,
-        period_id,
-        attendance_date,
-        status
-    ))
