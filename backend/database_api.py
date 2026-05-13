@@ -11,24 +11,21 @@ BASE_DIR = os.path.dirname(
 
 DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 
+# Ensure DB folder exists (IMPORTANT for Render)
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
 
 # -----------------------------
 # SAFE DB CONNECTION
 # -----------------------------
 def connect_db():
-
-    # ensure database folder exists (IMPORTANT for Render)
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-
     conn = sqlite3.connect(
         DB_PATH,
         timeout=10,
         check_same_thread=False
     )
 
-    # prevent locking issues
     conn.execute("PRAGMA journal_mode=WAL;")
-
     return conn
 
 
@@ -41,59 +38,46 @@ def init_db():
 
     # USERS TABLE
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT NOT NULL
-    )
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
     """)
 
     # ATTENDANCE TABLE
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS attendance (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        date TEXT,
-        time TEXT
-    )
-    """)
-
-    # STUDENTS TABLE
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )
+        CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            date TEXT,
+            time TEXT
+        )
     """)
 
     # ACADEMIC ATTENDANCE TABLE
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS academic_attendance (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER,
-        subject_id INTEGER,
-        period_id INTEGER,
-        attendance_date TEXT,
-        status TEXT
-    )
+        CREATE TABLE IF NOT EXISTS academic_attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER,
+            subject_id INTEGER,
+            period_id INTEGER,
+            attendance_date TEXT,
+            status TEXT
+        )
     """)
 
     conn.commit()
     conn.close()
 
-    print("✅ Database initialized successfully")
-
 
 # -----------------------------
-# RETRY SAFE EXECUTION
+# SAFE EXECUTION (RETRY LOGIC)
 # -----------------------------
 def safe_execute(query, params=(), retries=5):
-
     for attempt in range(retries):
-
         try:
             conn = connect_db()
             cursor = conn.cursor()
@@ -105,11 +89,9 @@ def safe_execute(query, params=(), retries=5):
             return True
 
         except sqlite3.OperationalError as e:
-
             if "locked" in str(e).lower():
                 time.sleep(0.3)
                 continue
-
             raise e
 
     return False
@@ -119,7 +101,6 @@ def safe_execute(query, params=(), retries=5):
 # GET ALL ATTENDANCE
 # -----------------------------
 def get_all_attendance():
-
     conn = connect_db()
     cursor = conn.cursor()
 
@@ -138,7 +119,6 @@ def get_all_attendance():
 # INSERT ATTENDANCE
 # -----------------------------
 def insert_attendance(name, date, time):
-
     safe_execute(
         "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
         (name, date, time)
@@ -146,10 +126,9 @@ def insert_attendance(name, date, time):
 
 
 # -----------------------------
-# GET STUDENT ID BY NAME
+# GET STUDENT ID
 # -----------------------------
 def get_student_id_by_name(full_name):
-
     conn = connect_db()
     cursor = conn.cursor()
 
@@ -176,7 +155,6 @@ def mark_academic_attendance(
     attendance_date,
     status
 ):
-
     safe_execute("""
         INSERT INTO academic_attendance (
             student_id,
@@ -192,4 +170,4 @@ def mark_academic_attendance(
         period_id,
         attendance_date,
         status
-    ))
+    ))  
