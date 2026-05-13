@@ -11,12 +11,12 @@ BASE_DIR = os.path.dirname(
 
 DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 
-# Ensure DB folder exists (IMPORTANT for Render)
+# Ensure folder exists (Render fix)
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 
 # -----------------------------
-# SAFE DB CONNECTION
+# CONNECTION
 # -----------------------------
 def connect_db():
     conn = sqlite3.connect(
@@ -24,7 +24,6 @@ def connect_db():
         timeout=10,
         check_same_thread=False
     )
-
     conn.execute("PRAGMA journal_mode=WAL;")
     return conn
 
@@ -36,7 +35,7 @@ def init_db():
     conn = connect_db()
     cursor = conn.cursor()
 
-    # USERS TABLE
+    # USERS TABLE (FIX FOR YOUR ERROR)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +46,6 @@ def init_db():
         )
     """)
 
-    # ATTENDANCE TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +55,6 @@ def init_db():
         )
     """)
 
-    # ACADEMIC ATTENDANCE TABLE
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS academic_attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,10 +71,16 @@ def init_db():
 
 
 # -----------------------------
-# SAFE EXECUTION (RETRY LOGIC)
+# AUTO-RUN ON IMPORT (IMPORTANT FIX)
+# -----------------------------
+init_db()
+
+
+# -----------------------------
+# SAFE EXECUTE
 # -----------------------------
 def safe_execute(query, params=(), retries=5):
-    for attempt in range(retries):
+    for _ in range(retries):
         try:
             conn = connect_db()
             cursor = conn.cursor()
@@ -85,7 +88,6 @@ def safe_execute(query, params=(), retries=5):
             cursor.execute(query, params)
             conn.commit()
             conn.close()
-
             return True
 
         except sqlite3.OperationalError as e:
@@ -98,7 +100,7 @@ def safe_execute(query, params=(), retries=5):
 
 
 # -----------------------------
-# GET ALL ATTENDANCE
+# GET ATTENDANCE
 # -----------------------------
 def get_all_attendance():
     conn = connect_db()
@@ -146,7 +148,7 @@ def get_student_id_by_name(full_name):
 
 
 # -----------------------------
-# MARK ACADEMIC ATTENDANCE
+# MARK ATTENDANCE
 # -----------------------------
 def mark_academic_attendance(
     student_id,

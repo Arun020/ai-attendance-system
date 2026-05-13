@@ -19,14 +19,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
 # -----------------------------
-# STARTUP (CRITICAL FIX)
+# INIT DB ON STARTUP (RENDER SAFE)
 # -----------------------------
 @app.on_event("startup")
 def startup():
-    print("🔥 Initializing Database...")
     init_db()
-    print("🔥 Database Ready")
 
 
 # -----------------------------
@@ -34,8 +33,9 @@ def startup():
 # -----------------------------
 security = HTTPBearer()
 
+
 # -----------------------------
-# CORS CONFIG
+# CORS
 # -----------------------------
 app.add_middleware(
     CORSMiddleware,
@@ -45,6 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # -----------------------------
 # ROUTERS
 # -----------------------------
@@ -53,8 +54,9 @@ app.include_router(admin_router)
 app.include_router(teacher_router)
 app.include_router(attendance_router)
 
+
 # -----------------------------
-# OPENAPI SECURITY FIX
+# OPENAPI FIX
 # -----------------------------
 def custom_openapi():
     if app.openapi_schema:
