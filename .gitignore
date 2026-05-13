@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+.vscode/
+*.pyc
+*.pkl
+*.db
+*.sqlite
+*.log
+.env
+logs/
+exports/
