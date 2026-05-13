@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 
 import requests
+import certifi   # ✅ ADDED FIX
 from session_store import set_session, get_token
 
 
@@ -64,8 +65,10 @@ def login_user():
 
     try:
         response = requests.post(
-            "http://127.0.0.1:8000/login",
-            json={"email": email, "password": password}
+            "https://ai-attendance-system-edyg.onrender.com/login",
+            json={"email": email, "password": password},
+            verify=certifi.where(),   # ✅ FIX ADDED
+            timeout=10
         )
 
         data = response.json()
@@ -112,7 +115,6 @@ def start_attendance():
     tk.Label(window, text="Select Attendance Mode",
              font=("Arial", 14, "bold")).pack(pady=10)
 
-    # COLLEGE
     def college_mode():
 
         if CURRENT_ROLE not in ["admin", "teacher", "student"]:
@@ -135,7 +137,6 @@ def start_attendance():
             token or ""
         ])
 
-    # CORPORATE
     def corporate_mode():
 
         if CURRENT_ROLE not in ["admin", "hr"]:
@@ -209,11 +210,11 @@ def view_attendance():
                  font=("Arial", 14, "bold")).pack(pady=10)
 
         def open_college():
-            webbrowser.open("http://127.0.0.1:8000/college-ui")
+            webbrowser.open("https://ai-attendance-system-edyg.onrender.com/college-ui")
             popup.destroy()
 
         def open_corporate():
-            webbrowser.open("http://127.0.0.1:8000/corporate-ui")
+            webbrowser.open("https://ai-attendance-system-edyg.onrender.com/corporate-ui")
             popup.destroy()
 
         tk.Button(popup, text="College Dashboard",
@@ -225,18 +226,18 @@ def view_attendance():
         return
 
     if role == "teacher":
-        webbrowser.open("http://127.0.0.1:8000/college-ui")
+        webbrowser.open("https://ai-attendance-system-edyg.onrender.com/college-ui")
         return
 
     if role == "hr":
-        webbrowser.open("http://127.0.0.1:8000/corporate-ui")
+        webbrowser.open("https://ai-attendance-system-edyg.onrender.com/corporate-ui")
         return
 
     messagebox.showerror("Access Denied", "No dashboard access")
 
 
 # -----------------------------
-# VIEW DEFAULTERS (NEW FEATURE)
+# VIEW DEFAULTERS
 # -----------------------------
 def view_defaulters():
 
@@ -257,11 +258,11 @@ def view_defaulters():
                  font=("Arial", 14, "bold")).pack(pady=10)
 
         def open_college():
-            webbrowser.open("http://127.0.0.1:8000/college-defaulters")
+            webbrowser.open("https://ai-attendance-system-edyg.onrender.com/college-defaulters")
             popup.destroy()
 
         def open_corporate():
-            webbrowser.open("http://127.0.0.1:8000/corporate-defaulters")
+            webbrowser.open("https://ai-attendance-system-edyg.onrender.com/corporate-defaulters")
             popup.destroy()
 
         tk.Button(popup, text="College Defaulters",
@@ -271,16 +272,6 @@ def view_defaulters():
                   width=25, command=open_corporate).pack(pady=5)
 
         return
-
-    if role == "teacher":
-        webbrowser.open("http://127.0.0.1:8000/college-defaulters")
-        return
-
-    if role == "hr":
-        webbrowser.open("http://127.0.0.1:8000/corporate-defaulters")
-        return
-
-    messagebox.showerror("Access Denied", "No access to defaulters")
 
 
 # -----------------------------
@@ -292,7 +283,7 @@ def exit_application():
 
 
 # -----------------------------
-# UI DESIGN
+# UI DESIGN (UNCHANGED)
 # -----------------------------
 main_frame = ctk.CTkFrame(app, corner_radius=20)
 main_frame.pack(pady=30, padx=30, fill="both", expand=True)
@@ -303,7 +294,6 @@ title.pack(pady=25)
 
 button_frame = ctk.CTkFrame(main_frame)
 button_frame.pack(pady=20)
-
 
 ctk.CTkButton(button_frame, text="Login (JWT)",
               width=250, height=50, command=login_user).grid(row=0, column=0, padx=20, pady=15)
@@ -328,6 +318,5 @@ ctk.CTkButton(button_frame, text="View Defaulters",
 ctk.CTkButton(main_frame, text="Exit",
               width=300, height=50, fg_color="red",
               hover_color="darkred", command=exit_application).pack(pady=20)
-
 
 app.mainloop()
