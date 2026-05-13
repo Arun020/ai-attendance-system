@@ -17,20 +17,78 @@ DB_PATH = os.path.join(BASE_DIR, "database", "attendance.db")
 # -----------------------------
 def connect_db():
 
+    # ensure database folder exists (IMPORTANT for Render)
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
     conn = sqlite3.connect(
         DB_PATH,
         timeout=10,
         check_same_thread=False
     )
 
-    # IMPORTANT: prevents locking issues
+    # prevent locking issues
     conn.execute("PRAGMA journal_mode=WAL;")
 
     return conn
 
 
 # -----------------------------
-# RETRY SAFE EXECUTION (CRITICAL FIX)
+# INIT DATABASE (CRITICAL FIX)
+# -----------------------------
+def init_db():
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    # USERS TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+    )
+    """)
+
+    # ATTENDANCE TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        date TEXT,
+        time TEXT
+    )
+    """)
+
+    # STUDENTS TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS students (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+    """)
+
+    # ACADEMIC ATTENDANCE TABLE
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS academic_attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER,
+        subject_id INTEGER,
+        period_id INTEGER,
+        attendance_date TEXT,
+        status TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+    print("✅ Database initialized successfully")
+
+
+# -----------------------------
+# RETRY SAFE EXECUTION
 # -----------------------------
 def safe_execute(query, params=(), retries=5):
 
@@ -49,7 +107,7 @@ def safe_execute(query, params=(), retries=5):
         except sqlite3.OperationalError as e:
 
             if "locked" in str(e).lower():
-                time.sleep(0.3)  # wait and retry
+                time.sleep(0.3)
                 continue
 
             raise e
@@ -77,7 +135,7 @@ def get_all_attendance():
 
 
 # -----------------------------
-# INSERT ATTENDANCE (OLD SYSTEM)
+# INSERT ATTENDANCE
 # -----------------------------
 def insert_attendance(name, date, time):
 
@@ -109,7 +167,7 @@ def get_student_id_by_name(full_name):
 
 
 # -----------------------------
-# MARK ACADEMIC ATTENDANCE (FIXED)
+# MARK ACADEMIC ATTENDANCE
 # -----------------------------
 def mark_academic_attendance(
     student_id,
@@ -119,7 +177,6 @@ def mark_academic_attendance(
     status
 ):
 
-    # prevent duplicate + lock-safe insert
     safe_execute("""
         INSERT INTO academic_attendance (
             student_id,

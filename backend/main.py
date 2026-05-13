@@ -7,6 +7,7 @@ from backend.auth_api import router as auth_router
 from backend.admin_api import router as admin_router
 from backend.teacher_api import router as teacher_router
 from backend.attendance_api import router as attendance_router
+from backend.database_api import init_db
 
 # -----------------------------
 # APP INIT
@@ -15,6 +16,13 @@ app = FastAPI(
     title="AI Attendance API",
     version="1.0.0"
 )
+
+# -----------------------------
+# STARTUP EVENT (IMPORTANT FIX)
+# -----------------------------
+@app.on_event("startup")
+def startup():
+    init_db()
 
 # -----------------------------
 # JWT SCHEME
@@ -33,14 +41,12 @@ app.add_middleware(
 )
 
 # -----------------------------
-# ROUTERS (IMPORTANT FIX)
+# ROUTERS
 # -----------------------------
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(teacher_router)
-
-# IMPORTANT: give prefix to avoid confusion
-app.include_router(attendance_router, prefix="")
+app.include_router(attendance_router)
 
 # -----------------------------
 # OPENAPI FIX
